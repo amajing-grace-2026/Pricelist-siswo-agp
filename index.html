@@ -64,7 +64,7 @@ footer{font-size:12px;color:var(--mu);text-align:center;padding:10px}
 <header><h1>Katalog Produk ASUS <span class="v">Versi AGP</span></h1><p>Pricelist reguler dan gaming 16 Nov 2026 &middot; Desktop dan AIO 19 Okt 2026 &middot; NUC dan Mini PC 20 Jan 2026 &middot; Aksesori 18 Nov 2026</p></header>
 <main>
 <nav role="tablist"><button role="tab" data-t="cat" aria-selected="true">Katalog</button><button role="tab" data-t="cmp" aria-selected="false">Bandingkan (<span id="nc">0</span>/3)</button><button role="tab" data-t="rec" aria-selected="false">Saran</button></nav>
-<div class="panel"><div class="tg"><label><input type="checkbox" id="all"> Tampilkan semua data (termasuk EOL)</label><label><input type="checkbox" id="full"> Tampilkan spesifikasi lengkap</label></div></div>
+<div class="panel"><div class="tg"><label><input type="checkbox" id="all"> Tampilkan semua data (termasuk EOL)</label><label><input type="checkbox" id="full"> Tampilkan spesifikasi lengkap</label><label><input type="checkbox" id="tch"> Hanya layar touchscreen</label></div></div>
 <section id="t-cat">
 <div class="panel"><div class="grid">
 <label class="f">Cari model / spesifikasi<input id="q" type="search" placeholder="mis. E1404FA, Ryzen 5, OLED, NUC"></label>
@@ -99,9 +99,12 @@ const $=s=>document.querySelector(s),rp=n=>n==null?'-':'Rp '+n.toLocaleString('i
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const S={t:'cat',q:'',src:'',se:'',ram:0,ssd:0,min:'',max:'',sort:'sr',all:false,full:false,cmp:[],lim:40};
 const act=x=>S.all||x.st==='Ongoing'||x.st==='NEW';
+const tw=s=>/(^|[^-\w])touch(?![-\s]?pad)(?!\s+gaming)/i.test(s)&&!/non-?\s?touch/i.test(s);
+const isT=x=>{if(x.s==='A'||x.s==='M'||/^GC3/i.test(x.m))return false;if(/flip|ROG Flow|ROG Ally/i.test(x.se)||/^RC7/i.test(x.m))return true;const tp=x.f.find(p=>/^touch panel$/i.test(p[0]));if(tp)return /^touch/i.test(tp[1]);return tw(x.l||'')||tw(x.sp||'')||x.f.some(p=>!/touchpad|keyboard/i.test(p[0])&&/panel|display|touch|layar|screen|spec/i.test(p[0])&&tw(p[1]));};
+D.forEach(x=>x.t=isT(x));
 const ssdT=d=>d?(d>=1024?d/1024+' TB':d+' GB'):'';
 function flt(){const q=S.q.toLowerCase().split(/\s+/).filter(Boolean);
- return D.filter(x=>act(x)&&(!S.src||x.s===S.src)&&(!S.se||x.se===S.se)&&(x.r||0)>=S.ram&&(x.d||0)>=S.ssd&&(S.min===''||(x.sr||0)>=+S.min*1e6)&&(S.max===''||(x.sr||0)<=+S.max*1e6)&&q.every(w=>(x.m+' '+x.p+' '+x.se+' '+x.sp).toLowerCase().includes(w)))
+ return D.filter(x=>act(x)&&(!S.tch||x.t)&&(!S.src||x.s===S.src)&&(!S.se||x.se===S.se)&&(x.r||0)>=S.ram&&(x.d||0)>=S.ssd&&(S.min===''||(x.sr||0)>=+S.min*1e6)&&(S.max===''||(x.sr||0)<=+S.max*1e6)&&q.every(w=>(x.m+' '+x.p+' '+x.se+' '+x.sp).toLowerCase().includes(w)))
  .sort((a,b)=>S.sort==='n'?a.m.localeCompare(b.m):S.sort==='-sr'?(b.sr||0)-(a.sr||0):(a.sr||1e12)-(b.sr||1e12));}
 function full(x){const f=x.f.length?'<dl>'+x.f.map(p=>`<dt>${esc(p[0])}</dt><dd>${esc(p[1])}</dd>`).join('')+'</dl>':'<p>Rincian lengkap belum tersedia untuk model ini.</p>';
  return `<details class="fl" open><summary>Spesifikasi lengkap</summary><p>Kode spesifikasi: ${esc(x.sp)}</p>${f}</details>`;}
@@ -110,7 +113,7 @@ function card(x,note){const ch=x.k||[['CPU',x.c],['GPU',x.g&&x.g!=='UMA'?x.g:'']
 <ul class="ch">${ch.map(c=>`<li><b>${c[0]}</b> ${esc(c[1])}</li>`).join('')}</ul>${note?`<p class="nt">${esc(note)}</p>`:''}
 <div class="pr">${COLS.filter(c=>c[0] in x).map(c=>`<div class="${c[0]==='sr'?'main':''}"><span>${c[1]}</span><strong>${rp(x[c[0]])}</strong></div>`).join('')}</div>
 <label class="cb"><input type="checkbox" data-c="${x.i}" ${S.cmp.includes(x.i)?'checked':''}> Bandingkan</label>${S.full?full(x):''}</article>`;}
-function res(){const r=flt();$('#cnt').textContent=`Menampilkan ${Math.min(S.lim,r.length)} dari ${r.length} model`+(S.all?'':' (status Ongoing dan NEW)');
+function res(){const r=flt();$('#cnt').textContent=`Menampilkan ${Math.min(S.lim,r.length)} dari ${r.length} model`+(S.all?'':' (status Ongoing dan NEW)')+(S.tch?', hanya layar touchscreen':'');
  $('#res').innerHTML=r.length?r.slice(0,S.lim).map(x=>card(x)).join(''):'<p class="empty">Tidak ada model yang cocok. Coba longgarkan filter atau centang “Tampilkan semua data”.</p>';
  $('#more').hidden=r.length<=S.lim;}
 function seOpts(){const s=[...new Set(D.filter(x=>!S.src||x.s===S.src).map(x=>x.se))].sort();$('#se').innerHTML='<option value="">Semua seri</option>'+s.map(v=>`<option>${esc(v)}</option>`).join('');S.se='';}
@@ -140,7 +143,7 @@ function wa(){const n=S.cmp.map(i=>D[i].m);$('#wa').href='https://wa.me/'+WA+'?t
 function tab(t){S.t=t;['cat','cmp','rec'].forEach(k=>$('#t-'+k).hidden=k!==t);document.querySelectorAll('nav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));if(t==='cmp')cmpv();}
 function all(){res();cmpv();}
 document.addEventListener('input',e=>{const i=e.target.id;if(['q','src','se','ram','ssd','min','max','sort'].includes(i)){S[i]=['ram','ssd'].includes(i)?+e.target.value:e.target.value;S.lim=40;if(i==='src')seOpts();res();}});
-document.addEventListener('change',e=>{const t=e.target;if(t.id==='all'||t.id==='full'){S[t.id]=t.checked;all();return;}
+document.addEventListener('change',e=>{const t=e.target;if(t.id==='all'||t.id==='full'||t.id==='tch'){S[t.id]=t.checked;all();return;}
  if(t.dataset.c!==undefined){const i=+t.dataset.c;if(t.checked){if(S.cmp.length>=3){t.checked=false;alert('Maksimal 3 laptop untuk dibandingkan.');return;}S.cmp.push(i);}else S.cmp=S.cmp.filter(v=>v!==i);cmpv();wa();document.querySelectorAll(`[data-c="${i}"]`).forEach(c=>c.checked=t.checked);}});
 document.addEventListener('click',e=>{const t=e.target;if(t.dataset.t)tab(t.dataset.t);if(t.dataset.r){S.cmp=S.cmp.filter(v=>v!==+t.dataset.r);cmpv();wa();res();}if(t.id==='more'){S.lim+=40;res();}if(t.id==='go')rec();});
 seOpts();res();cmpv();wa();
